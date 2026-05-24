@@ -6,6 +6,7 @@ function Dashboard() {
   const [boilerData, setBoilerData] = useState(null)
   const [error, setError] = useState('')
   const [wsStatus, setWsStatus] = useState('Подключение...')
+  const [vacationMode, setVacationMode] = useState(false)
   const navigate = useNavigate()
   const wsRef = useRef(null)
 
@@ -36,6 +37,7 @@ function Dashboard() {
 
   useEffect(() => {
     api.get('/api/boiler/status').then((res) => setBoilerData(res.data)).catch(() => {})
+    api.get('/api/vacation').then((res) => setVacationMode(res.data.vacation_mode)).catch(() => {})
     connectWebSocket()
 
     return () => {
@@ -46,6 +48,16 @@ function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem('token')
     navigate('/login')
+  }
+
+  const toggleVacation = async () => {
+    const newMode = !vacationMode
+    try {
+      await api.post('/api/vacation', { vacation_mode: newMode })
+      setVacationMode(newMode)
+    } catch (err) {
+      setError('Ошибка переключения режима отпуска')
+    }
   }
 
   return (
@@ -62,6 +74,22 @@ function Dashboard() {
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
+      {/* Режим отпуска */}
+      <div style={{ padding: '15px', border: `2px solid ${vacationMode ? '#f59e0b' : '#444'}`, borderRadius: '8px', marginTop: '20px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <strong>🏖️ Режим отпуска</strong>
+          <p style={{ margin: '4px 0', color: '#888', fontSize: '0.9em' }}>
+            {vacationMode ? 'Включён — бойлер не работает' : 'Выключен — умный режим активен'}
+          </p>
+        </div>
+        <button
+          onClick={toggleVacation}
+          style={{ padding: '10px 20px', background: vacationMode ? '#f59e0b' : '#444', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+        >
+          {vacationMode ? '🏠 Вернуться домой' : '🏖️ Уехать в отпуск'}
+        </button>
+      </div>
+
       {boilerData ? (
         <div style={{ marginTop: '20px' }}>
           <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', marginBottom: '15px' }}>
@@ -74,7 +102,7 @@ function Dashboard() {
           <div style={{ padding: '20px', border: '1px solid #ccc', borderRadius: '8px', marginBottom: '15px' }}>
             <h3>Статус бойлера</h3>
             <p style={{ fontSize: '1.5em' }}>
-              {boilerData.status === 'ON' ? '🟢 Включён' : '🔴 Выключен'}
+              {vacationMode ? '🏖️ Режим отпуска' : boilerData.status === 'ON' ? '🟢 Включён' : '🔴 Выключен'}
             </p>
             <p>Порог: {boilerData.threshold} €/MWh</p>
           </div>
