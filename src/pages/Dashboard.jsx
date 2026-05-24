@@ -35,9 +35,7 @@ function Dashboard() {
   }
 
   useEffect(() => {
-    // Сначала загружаем через HTTP
     api.get('/api/boiler/status').then((res) => setBoilerData(res.data)).catch(() => {})
-    // Потом подключаем WebSocket
     connectWebSocket()
 
     return () => {
@@ -56,6 +54,7 @@ function Dashboard() {
         <h2>Elektri Vorg — Dashboard <span style={{ fontSize: '0.5em', color: '#888' }}>{wsStatus}</span></h2>
         <div>
           <Link to="/devices" style={{ marginRight: '15px' }}>Устройства</Link>
+          <Link to="/forecast" style={{ marginRight: '15px' }}>Прогноз</Link>
           <button onClick={handleLogout}>Выйти</button>
         </div>
       </div>
