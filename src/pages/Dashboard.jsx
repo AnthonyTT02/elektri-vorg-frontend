@@ -55,6 +55,7 @@ function Dashboard() {
         <div>
           <Link to="/devices" style={{ marginRight: '15px' }}>Устройства</Link>
           <Link to="/forecast" style={{ marginRight: '15px' }}>Прогноз</Link>
+          <Link to="/savings" style={{ marginRight: '15px' }}>Экономия</Link>
           <button onClick={handleLogout}>Выйти</button>
         </div>
       </div>
