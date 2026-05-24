@@ -1,25 +1,48 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import api from '../services/api'
 
 function Dashboard() {
   const [boilerData, setBoilerData] = useState(null)
   const [error, setError] = useState('')
+  const [wsStatus, setWsStatus] = useState('Подключение...')
   const navigate = useNavigate()
+  const wsRef = useRef(null)
 
-  const fetchStatus = async () => {
-    try {
-      const res = await api.get('/api/boiler/status')
-      setBoilerData(res.data)
-    } catch (err) {
-      setError('Ошибка загрузки данных')
+  const connectWebSocket = () => {
+    const wsUrl = 'ws://rwymo8fzm2o2eoet81n3bb7x.176.112.158.15.sslip.io'
+    const ws = new WebSocket(wsUrl)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      setWsStatus('🟢 Live')
+      setError('')
+    }
+
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data)
+      setBoilerData(data)
+    }
+
+    ws.onerror = () => {
+      setWsStatus('🔴 Ошибка')
+    }
+
+    ws.onclose = () => {
+      setWsStatus('🟡 Переподключение...')
+      setTimeout(connectWebSocket, 3000)
     }
   }
 
   useEffect(() => {
-    fetchStatus()
-    const interval = setInterval(fetchStatus, 30000)
-    return () => clearInterval(interval)
+    // Сначала загружаем через HTTP
+    api.get('/api/boiler/status').then((res) => setBoilerData(res.data)).catch(() => {})
+    // Потом подключаем WebSocket
+    connectWebSocket()
+
+    return () => {
+      if (wsRef.current) wsRef.current.close()
+    }
   }, [])
 
   const handleLogout = () => {
@@ -30,7 +53,7 @@ function Dashboard() {
   return (
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h2>Elektri Vorg — Dashboard</h2>
+        <h2>Elektri Vorg — Dashboard <span style={{ fontSize: '0.5em', color: '#888' }}>{wsStatus}</span></h2>
         <div>
           <Link to="/devices" style={{ marginRight: '15px' }}>Устройства</Link>
           <button onClick={handleLogout}>Выйти</button>
@@ -56,7 +79,7 @@ function Dashboard() {
             <p>Порог: {boilerData.threshold} €/MWh</p>
           </div>
 
-          <button onClick={fetchStatus} style={{ padding: '10px 20px' }}>
+          <button onClick={() => api.get('/api/boiler/status').then(r => setBoilerData(r.data))} style={{ padding: '10px 20px' }}>
             Обновить
           </button>
         </div>
