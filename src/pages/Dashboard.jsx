@@ -7,6 +7,7 @@ function Dashboard() {
   const [error, setError] = useState('')
   const [wsStatus, setWsStatus] = useState('Подключение...')
   const [vacationMode, setVacationMode] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const navigate = useNavigate()
   const wsRef = useRef(null)
 
@@ -38,6 +39,14 @@ function Dashboard() {
   useEffect(() => {
     api.get('/api/boiler/status').then((res) => setBoilerData(res.data)).catch(() => {})
     api.get('/api/vacation').then((res) => setVacationMode(res.data.vacation_mode)).catch(() => {})
+
+    // Проверяем роль пользователя из токена
+    const token = localStorage.getItem('token')
+    if (token) {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      if (payload.role === 'admin') setIsAdmin(true)
+    }
+
     connectWebSocket()
 
     return () => {
@@ -68,13 +77,13 @@ function Dashboard() {
           <Link to="/devices" style={{ marginRight: '15px' }}>Устройства</Link>
           <Link to="/forecast" style={{ marginRight: '15px' }}>Прогноз</Link>
           <Link to="/savings" style={{ marginRight: '15px' }}>Экономия</Link>
+          {isAdmin && <Link to="/admin" style={{ marginRight: '15px' }}>👑 Admin</Link>}
           <button onClick={handleLogout}>Выйти</button>
         </div>
       </div>
 
       {error && <p style={{ color: 'red' }}>{error}</p>}
 
-      {/* Режим отпуска */}
       <div style={{ padding: '15px', border: `2px solid ${vacationMode ? '#f59e0b' : '#444'}`, borderRadius: '8px', marginTop: '20px', marginBottom: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <strong>🏖️ Режим отпуска</strong>
